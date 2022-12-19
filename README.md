@@ -59,4 +59,5 @@ module "static-website" {
 | Name | Description |
 |------|-------------|
 | website_url | Website URL |
-| s3_bucket |  
+| s3_bucket |  s3 bucket for static site |
+| aws_s3_bucket | s3 bucket for logging |
