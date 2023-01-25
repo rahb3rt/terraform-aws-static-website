@@ -1,10 +1,5 @@
 provider "aws" {
-  region = "${var.region}"
-}
-
-provider "aws" {
-  alias = "virginia"
-  region = "us-east-1"
+  region = var.region
 }
 
 resource "aws_s3_bucket" "site_bucket"  {
@@ -30,8 +25,8 @@ resource "aws_s3_bucket" "site_bucket"  {
 EOF
 
   tags = {
-    APP = "${var.app}"
-    STAGE = "${var.stage}"
+    APP = var.app
+    STAGE = var.stage
   }
 
   versioning {
@@ -39,8 +34,8 @@ EOF
   }
 
   website {
-    index_document = "${var.index_page}"
-    error_document = "${var.error_page}"
+    index_document = var.index_page
+    error_document = var.error_page
   }
 }
 
@@ -80,14 +75,14 @@ resource "aws_acm_certificate" "certificate" {
   domain_name       = "*.${var.domain}"
   validation_method = "DNS"
 
-  subject_alternative_names = ["${var.domain}"]
+  subject_alternative_names = [var.domain]
 }
 
 # create a cdn distribution
 resource "aws_cloudfront_distribution" "distribution" {
   origin {
-    domain_name = "${aws_s3_bucket.site_bucket.bucket_regional_domain_name}"
-    origin_id   = "${var.cname}"
+    domain_name = aws_s3_bucket.site_bucket.bucket_regional_domain_name
+    origin_id   = var.cname
 
     custom_origin_config {
       http_port              = "80"
@@ -105,7 +100,7 @@ resource "aws_cloudfront_distribution" "distribution" {
     compress               = true
     allowed_methods        = ["GET", "HEAD"]
     cached_methods         = ["GET", "HEAD"]
-    target_origin_id       = "${var.cname}"
+    target_origin_id       = var.cname
     min_ttl                = 0
     default_ttl            = 86400
     max_ttl                = 31536000
@@ -127,7 +122,7 @@ resource "aws_cloudfront_distribution" "distribution" {
   }
 
   viewer_certificate {
-    acm_certificate_arn = "${var.cert_arn == "" ? aws_acm_certificate.certificate[0].arn : var.cert_arn }"
+    acm_certificate_arn = var.cert_arn == "" ? aws_acm_certificate.certificate[0].arn : var.cert_arn 
     ssl_support_method  = "sni-only"
   }
 
@@ -135,7 +130,7 @@ resource "aws_cloudfront_distribution" "distribution" {
     include_cookies = false
     bucket          = aws_s3_bucket.website_logs.bucket_domain_name
     prefix          = "cdn-logs/${var.domain}/"
-    log_group_arn = "${aws_cloudwatch_log_group.cdn_log_group.arn}"
+    log_group_arn = aws_cloudwatch_log_group.cdn_log_group.arn
   }
 
   depends_on= [null_resource.upload_web_resouce]
@@ -156,8 +151,8 @@ resource "aws_route53_record" "www" {
   type    = "A"
 
   alias {
-    name                   = "${aws_cloudfront_distribution.distribution.domain_name}"
-    zone_id                = "${aws_cloudfront_distribution.distribution.hosted_zone_id}"
+    name                   = aws_cloudfront_distribution.distribution.domain_name
+    zone_id                = aws_cloudfront_distribution.distribution.hosted_zone_id
     evaluate_target_health = false
   }
 }
@@ -178,6 +173,6 @@ resource "aws_wafv2_web_acl" "cloudfront_security" {
 
 # Associate the WAF web ACL with the CloudFront distribution
 resource "aws_wafv2_web_acl_association" "cloudfront" {
-  resource_arn = "${aws_cloudfront_distribution.distribution.arn}"
-  web_acl_arn  = "${aws_wafv2_web_acl.cloudfront_security.arn}"
+  resource_arn = aws_cloudfront_distribution.distribution.arn
+  web_acl_arn  = aws_wafv2_web_acl.cloudfront_security.arn
 }

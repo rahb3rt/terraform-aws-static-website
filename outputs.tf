@@ -3,10 +3,10 @@ output "website_url" {
 }
 
 output "s3_bucket" {
-  value = "${var.app}-site-bucket--stage-${var.stage}"
+  value = "${var.app}-site-bucket-stage-${var.stage}"
 }
 
 /* get the logging s3 bucket */
 data "aws_s3_bucket" "logging" {
-  bucket = "${var.app}-logs"
+  bucket = "${var.app}-site-bucket-logs-stage-${var.stage}"
 }
